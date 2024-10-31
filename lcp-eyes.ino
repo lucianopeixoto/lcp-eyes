@@ -44,6 +44,9 @@ void loop() {
     case 4:
       requestSpecificPosition();
       break;
+    case 5:
+      randomLookingWithVariedSpeed();
+      break;
   }
 }
 
@@ -96,6 +99,10 @@ void handleSerialCommands() {
     setMode(4);
     Serial.println("Mode set to Request Specific Position.");
   }
+  else if (command == "mode 5") {
+    setMode(5);
+    Serial.println("Mode set to Random Looking with Varied Speed.");
+  }
   else if (command == "display_menu") {
     displayMenu();
   }
@@ -119,6 +126,7 @@ void displayMenu() {
   Serial.println("  mode 2  - Looking left and right slowly");
   Serial.println("  mode 3  - Random looking around");
   Serial.println("  mode 4  - Set specific position");
+  Serial.println("  mode 5  - Random looking with varied speed");
   Serial.println("  exit - Exit current mode and return to Mode 1");
   Serial.println("  show_settings - Display current settings");
   Serial.println("  display_menu - Show this menu again");
@@ -137,6 +145,7 @@ void showSettings() {
     case 2: Serial.println(" (Looking Left and Right Slowly)"); break;
     case 3: Serial.println(" (Random Looking)"); break;
     case 4: Serial.println(" (Request Specific Position)"); break;
+    case 5: Serial.println(" (Random Looking with Varied Speed)"); break;
   }
 }
 
@@ -161,6 +170,26 @@ void lookLeftAndRight() {
 void randomLooking() {
   int newPosition = random(minPosition, maxPosition);
   eyeServo.write(newPosition);
+  delay(random(500, 1500));
+}
+
+void randomLookingWithVariedSpeed() {
+  int newPosition = random(minPosition, maxPosition);
+  
+  if (random(10) < 7) { // 70% chance for slow movement
+    int currentPosition = eyeServo.read();
+    int step = (newPosition > currentPosition) ? 1 : -1;
+    while (currentPosition != newPosition) {
+      currentPosition += step;
+      eyeServo.write(currentPosition);
+      delay(20); // Slow movement
+      if (Serial.available()) return; // Check for new commands
+    }
+  } else {
+    // Quick movement
+    eyeServo.write(newPosition);
+  }
+  
   delay(random(500, 1500));
 }
 
@@ -202,7 +231,7 @@ void loadSettings() {
   // If EEPROM values are out of range, reset to default
   if (minPosition < 0 || minPosition > 180) minPosition = 45;
   if (maxPosition < 0 || maxPosition > 180) maxPosition = 135;
-  if (currentMode < 1 || currentMode > 4) currentMode = 1;
+  if (currentMode < 1 || currentMode > 5) currentMode = 1;
 }
 
 void setMode(int mode) {
